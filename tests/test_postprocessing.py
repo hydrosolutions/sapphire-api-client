@@ -186,7 +186,7 @@ class TestPostprocessingClientAPI:
         """Test reading forecast data."""
         responses.add(
             responses.GET,
-            "http://localhost:8000/forecasts/",
+            "http://localhost:8000/api/postprocessing/forecasts/",
             json=[
                 {"id": 1, "code": "12345", "date": "2024-01-01", "forecast": 100.0}
             ],
@@ -204,7 +204,7 @@ class TestPostprocessingClientAPI:
         """Test reading forecasts with all filters."""
         responses.add(
             responses.GET,
-            "http://localhost:8000/forecasts/",
+            "http://localhost:8000/api/postprocessing/forecasts/",
             json=[],
             status=200,
         )
@@ -227,7 +227,7 @@ class TestPostprocessingClientAPI:
         """Test writing forecast records."""
         responses.add(
             responses.POST,
-            "http://localhost:8000/forecasts/",
+            "http://localhost:8000/api/postprocessing/forecasts/",
             json=[{"id": 1}],
             status=201,
         )
@@ -242,7 +242,7 @@ class TestPostprocessingClientAPI:
         """Test reading linear regression forecast data."""
         responses.add(
             responses.GET,
-            "http://localhost:8000/lr-forecasts/",
+            "http://localhost:8000/api/postprocessing/lr-forecasts/",
             json=[{"id": 1, "code": "12345", "forecast": 95.0}],
             status=200,
         )
@@ -256,7 +256,7 @@ class TestPostprocessingClientAPI:
         """Test writing linear regression forecast records."""
         responses.add(
             responses.POST,
-            "http://localhost:8000/lr-forecasts/",
+            "http://localhost:8000/api/postprocessing/lr-forecasts/",
             json=[{"id": 1}, {"id": 2}],
             status=201,
         )
@@ -274,7 +274,7 @@ class TestPostprocessingClientAPI:
         """Test reading skill metrics."""
         responses.add(
             responses.GET,
-            "http://localhost:8000/skill-metrics/",
+            "http://localhost:8000/api/postprocessing/skill-metrics/",
             json=[{"id": 1, "code": "12345", "model": "lr", "nse": 0.85}],
             status=200,
         )
@@ -288,7 +288,7 @@ class TestPostprocessingClientAPI:
         """Test reading skill metrics with model filter."""
         responses.add(
             responses.GET,
-            "http://localhost:8000/skill-metrics/",
+            "http://localhost:8000/api/postprocessing/skill-metrics/",
             json=[],
             status=200,
         )
@@ -306,7 +306,7 @@ class TestPostprocessingClientAPI:
         """Test writing skill metric records."""
         responses.add(
             responses.POST,
-            "http://localhost:8000/skill-metrics/",
+            "http://localhost:8000/api/postprocessing/skill-metrics/",
             json=[{"id": 1}],
             status=201,
         )
@@ -321,7 +321,7 @@ class TestPostprocessingClientAPI:
         """Test that empty API response returns empty DataFrame."""
         responses.add(
             responses.GET,
-            "http://localhost:8000/forecasts/",
+            "http://localhost:8000/api/postprocessing/forecasts/",
             json=[],
             status=200,
         )
@@ -335,7 +335,7 @@ class TestPostprocessingClientAPI:
         """Test that health check is inherited from base client."""
         responses.add(
             responses.GET,
-            "http://localhost:8000/health",
+            "http://localhost:8000/api/postprocessing/health",
             json={"status": "healthy"},
             status=200,
         )
