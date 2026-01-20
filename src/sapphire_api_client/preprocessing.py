@@ -32,6 +32,9 @@ class SapphirePreprocessingClient(SapphireAPIClient):
         >>> client.write_runoff(records)
     """
 
+    # Service prefix for API gateway routing
+    SERVICE_PREFIX = "/api/preprocessing"
+
     # ==================== RUNOFF ====================
 
     def read_runoff(

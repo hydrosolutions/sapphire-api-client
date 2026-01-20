@@ -32,6 +32,9 @@ class SapphirePostprocessingClient(SapphireAPIClient):
         >>> df = client.read_forecasts(horizon="pentad", code="12345")
     """
 
+    # Service prefix for API gateway routing
+    SERVICE_PREFIX = "/api/postprocessing"
+
     # ==================== FORECASTS ====================
 
     def read_forecasts(

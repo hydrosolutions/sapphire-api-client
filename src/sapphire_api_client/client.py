@@ -48,6 +48,10 @@ class SapphireAPIClient:
     # HTTP status codes that should trigger a retry
     RETRYABLE_STATUS_CODES = {502, 503, 504}
 
+    # Service prefix for API routing (override in subclasses)
+    # e.g., "/api/preprocessing" or "/api/postprocessing"
+    SERVICE_PREFIX = ""
+
     def __init__(
         self,
         base_url: str = "http://localhost:8000",
@@ -77,6 +81,18 @@ class SapphireAPIClient:
         """Check if client has an auth token configured."""
         return self.auth_token is not None
 
+    def _get_full_url(self, endpoint: str) -> str:
+        """
+        Build full URL with service prefix.
+
+        Args:
+            endpoint: API endpoint (e.g., "/runoff/")
+
+        Returns:
+            Full URL (e.g., "http://localhost:8000/api/preprocessing/runoff/")
+        """
+        return f"{self.base_url}{self.SERVICE_PREFIX}{endpoint}"
+
     def _get_retry_decorator(self) -> Callable[[Callable[[], requests.Response]], Callable[[], requests.Response]]:
         """Create a retry decorator with configured settings."""
         return retry(
@@ -99,7 +115,7 @@ class SapphireAPIClient:
 
         Args:
             method: HTTP method (GET, POST, etc.)
-            endpoint: API endpoint (will be appended to base_url)
+            endpoint: API endpoint (will be appended to base_url with service prefix)
             params: Query parameters
             json: JSON body for POST requests
 
@@ -109,7 +125,7 @@ class SapphireAPIClient:
         Raises:
             SapphireAPIError: If request fails after all retries
         """
-        url = f"{self.base_url}{endpoint}"
+        url = self._get_full_url(endpoint)
 
         @self._get_retry_decorator()
         def _do_request() -> requests.Response:

@@ -234,7 +234,7 @@ class TestPreprocessingClientAPI:
         """Test reading runoff data."""
         responses.add(
             responses.GET,
-            "http://localhost:8000/runoff/",
+            "http://localhost:8000/api/preprocessing/runoff/",
             json=[
                 {"id": 1, "code": "12345", "date": "2024-01-01", "discharge": 100.0}
             ],
@@ -251,7 +251,7 @@ class TestPreprocessingClientAPI:
         """Test reading runoff with all filters."""
         responses.add(
             responses.GET,
-            "http://localhost:8000/runoff/",
+            "http://localhost:8000/api/preprocessing/runoff/",
             json=[],
             status=200,
         )
@@ -274,7 +274,7 @@ class TestPreprocessingClientAPI:
         """Test writing runoff records."""
         responses.add(
             responses.POST,
-            "http://localhost:8000/runoff/",
+            "http://localhost:8000/api/preprocessing/runoff/",
             json=[{"id": 1}],
             status=201,
         )
@@ -289,7 +289,7 @@ class TestPreprocessingClientAPI:
         """Test reading hydrograph data."""
         responses.add(
             responses.GET,
-            "http://localhost:8000/hydrograph/",
+            "http://localhost:8000/api/preprocessing/hydrograph/",
             json=[{"id": 1, "mean": 100.0}],
             status=200,
         )
@@ -302,7 +302,7 @@ class TestPreprocessingClientAPI:
         """Test reading meteo data."""
         responses.add(
             responses.GET,
-            "http://localhost:8000/meteo/",
+            "http://localhost:8000/api/preprocessing/meteo/",
             json=[{"id": 1, "meteo_type": "T", "value": 15.0}],
             status=200,
         )
@@ -315,7 +315,7 @@ class TestPreprocessingClientAPI:
         """Test reading snow data."""
         responses.add(
             responses.GET,
-            "http://localhost:8000/snow/",
+            "http://localhost:8000/api/preprocessing/snow/",
             json=[{"id": 1, "snow_type": "HS", "value": 50.0}],
             status=200,
         )
@@ -328,7 +328,7 @@ class TestPreprocessingClientAPI:
         """Test that empty API response returns empty DataFrame."""
         responses.add(
             responses.GET,
-            "http://localhost:8000/runoff/",
+            "http://localhost:8000/api/preprocessing/runoff/",
             json=[],
             status=200,
         )
