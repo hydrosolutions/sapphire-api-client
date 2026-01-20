@@ -67,7 +67,7 @@ class SapphirePostprocessingClient(SapphireAPIClient):
         if end_date:
             params["end_date"] = str(end_date)
 
-        records = self._get("/forecasts/", params=params)
+        records = self._get("/forecast/", params=params)
         return pd.DataFrame(records) if records else pd.DataFrame()
 
     def write_forecasts(self, records: List[Dict[str, Any]]) -> int:
@@ -80,7 +80,7 @@ class SapphirePostprocessingClient(SapphireAPIClient):
         Returns:
             Number of records written
         """
-        return self._post_batched("/forecasts/", records)
+        return self._post_batched("/forecast/", records)
 
     @staticmethod
     def prepare_forecast_records(
@@ -165,7 +165,7 @@ class SapphirePostprocessingClient(SapphireAPIClient):
         if end_date:
             params["end_date"] = str(end_date)
 
-        records = self._get("/lr-forecasts/", params=params)
+        records = self._get("/lr-forecast/", params=params)
         return pd.DataFrame(records) if records else pd.DataFrame()
 
     def write_lr_forecasts(self, records: List[Dict[str, Any]]) -> int:
@@ -178,7 +178,7 @@ class SapphirePostprocessingClient(SapphireAPIClient):
         Returns:
             Number of records written
         """
-        return self._post_batched("/lr-forecasts/", records)
+        return self._post_batched("/lr-forecast/", records)
 
     # ==================== SKILL METRICS ====================
 
@@ -211,7 +211,7 @@ class SapphirePostprocessingClient(SapphireAPIClient):
         if model:
             params["model"] = model
 
-        records = self._get("/skill-metrics/", params=params)
+        records = self._get("/skill-metric/", params=params)
         return pd.DataFrame(records) if records else pd.DataFrame()
 
     def write_skill_metrics(self, records: List[Dict[str, Any]]) -> int:
@@ -224,7 +224,7 @@ class SapphirePostprocessingClient(SapphireAPIClient):
         Returns:
             Number of records written
         """
-        return self._post_batched("/skill-metrics/", records)
+        return self._post_batched("/skill-metric/", records)
 
     @staticmethod
     def prepare_skill_metric_records(
