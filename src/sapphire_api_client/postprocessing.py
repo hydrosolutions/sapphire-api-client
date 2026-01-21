@@ -41,8 +41,12 @@ class SapphirePostprocessingClient(SapphireAPIClient):
         self,
         horizon: Optional[str] = None,
         code: Optional[str] = None,
+        model: Optional[str] = None,
         start_date: Optional[Union[str, date]] = None,
         end_date: Optional[Union[str, date]] = None,
+        target: Optional[Union[str, date]] = None,
+        start_target: Optional[Union[str, date]] = None,
+        end_target: Optional[Union[str, date]] = None,
         skip: int = 0,
         limit: int = 100,
     ) -> pd.DataFrame:
@@ -52,8 +56,12 @@ class SapphirePostprocessingClient(SapphireAPIClient):
         Args:
             horizon: Horizon type filter
             code: Station code filter
-            start_date: Start date filter
-            end_date: End date filter
+            model: Model type filter (TFT, TiDE, TSMixer, LR, EM, NE)
+            start_date: Start date filter (forecast issue date)
+            end_date: End date filter (forecast issue date)
+            target: Target date filter (the date the forecast is for)
+            start_target: Start of target date range filter
+            end_target: End of target date range filter
             skip: Pagination offset
             limit: Maximum records
 
@@ -65,10 +73,18 @@ class SapphirePostprocessingClient(SapphireAPIClient):
             params["horizon"] = horizon
         if code:
             params["code"] = code
+        if model:
+            params["model"] = model
         if start_date:
             params["start_date"] = str(start_date)
         if end_date:
             params["end_date"] = str(end_date)
+        if target:
+            params["target"] = str(target)
+        if start_target:
+            params["start_target"] = str(start_target)
+        if end_target:
+            params["end_target"] = str(end_target)
 
         records = self._get("/forecast/", params=params)
         return pd.DataFrame(records) if records else pd.DataFrame()
@@ -190,6 +206,8 @@ class SapphirePostprocessingClient(SapphireAPIClient):
         horizon: Optional[str] = None,
         code: Optional[str] = None,
         model: Optional[str] = None,
+        start_date: Optional[Union[str, date]] = None,
+        end_date: Optional[Union[str, date]] = None,
         skip: int = 0,
         limit: int = 100,
     ) -> pd.DataFrame:
@@ -200,6 +218,8 @@ class SapphirePostprocessingClient(SapphireAPIClient):
             horizon: Horizon type filter
             code: Station code filter
             model: Model name filter
+            start_date: Start date filter for skill metrics
+            end_date: End date filter for skill metrics
             skip: Pagination offset
             limit: Maximum records
 
@@ -213,6 +233,10 @@ class SapphirePostprocessingClient(SapphireAPIClient):
             params["code"] = code
         if model:
             params["model"] = model
+        if start_date:
+            params["start_date"] = str(start_date)
+        if end_date:
+            params["end_date"] = str(end_date)
 
         records = self._get("/skill-metric/", params=params)
         return pd.DataFrame(records) if records else pd.DataFrame()
