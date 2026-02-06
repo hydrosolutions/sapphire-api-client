@@ -14,6 +14,13 @@ from tenacity import (
     before_sleep_log,
 )
 
+from sapphire_api_client.validators import (
+    truncate_response_text,
+    validate_base_url,
+    validate_positive_int,
+    warn_http_with_token,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -46,7 +53,7 @@ class SapphireAPIClient:
     """
 
     # HTTP status codes that should trigger a retry
-    RETRYABLE_STATUS_CODES = {502, 503, 504}
+    RETRYABLE_STATUS_CODES = {429, 502, 503, 504}
 
     # Service prefix for API routing (override in subclasses)
     # e.g., "/api/preprocessing" or "/api/postprocessing"
@@ -60,12 +67,19 @@ class SapphireAPIClient:
         batch_size: int = 1000,
         timeout: int = 30,
     ):
+        validate_base_url(base_url)
+        validate_positive_int(max_retries, "max_retries")
+        validate_positive_int(batch_size, "batch_size")
+        validate_positive_int(timeout, "timeout")
+        warn_http_with_token(base_url, has_token=auth_token is not None)
+
         self.base_url = base_url.rstrip("/")
         self.auth_token = auth_token
         self.max_retries = max_retries
         self.batch_size = batch_size
         self.timeout = timeout
         self.session = requests.Session()
+        self.session.max_redirects = 5
 
         # Set up authentication header if token provided
         if auth_token:
@@ -139,6 +153,11 @@ class SapphireAPIClient:
 
             # Retry on certain status codes
             if resp.status_code in self.RETRYABLE_STATUS_CODES:
+                if resp.status_code == 429:
+                    retry_after = resp.headers.get("Retry-After")
+                    logger.warning(
+                        f"Rate limited (429). Retry-After: {retry_after}"
+                    )
                 raise requests.ConnectionError(
                     f"Server returned {resp.status_code}, will retry"
                 )
@@ -157,13 +176,13 @@ class SapphireAPIClient:
             raise SapphireAPIError(
                 "Authentication required. Provide a valid auth_token.",
                 status_code=401,
-                response=response.text,
+                response=truncate_response_text(response.text),
             )
         if response.status_code == 403:
             raise SapphireAPIError(
                 "Access denied. Insufficient permissions for this resource.",
                 status_code=403,
-                response=response.text,
+                response=truncate_response_text(response.text),
             )
         if response.status_code >= 400:
             detail = ""
@@ -173,11 +192,11 @@ class SapphireAPIClient:
                     detail = f": {body['detail']}"
             except (ValueError, requests.exceptions.JSONDecodeError):
                 if response.text:
-                    detail = f": {response.text}"
+                    detail = f": {truncate_response_text(response.text)}"
             raise SapphireAPIError(
                 f"API request failed ({response.status_code}){detail}",
                 status_code=response.status_code,
-                response=response.text,
+                response=truncate_response_text(response.text),
             )
 
         return response

@@ -11,6 +11,15 @@ from typing import Any, Dict, List, Literal, Optional, Union
 import pandas as pd
 
 from sapphire_api_client.client import SapphireAPIClient
+from sapphire_api_client.validators import (
+    VALID_HORIZONS,
+    VALID_METEO_TYPES,
+    VALID_SNOW_TYPES,
+    safe_int_conversion,
+    validate_enum_param,
+    validate_non_negative_int,
+    validate_positive_int,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +69,10 @@ class SapphirePreprocessingClient(SapphireAPIClient):
         Returns:
             DataFrame with runoff data
         """
+        validate_enum_param(horizon, VALID_HORIZONS, "horizon")
+        validate_non_negative_int(skip, "skip")
+        validate_positive_int(limit, "limit")
+
         params: Dict[str, Any] = {"skip": skip, "limit": limit}
         if horizon:
             params["horizon"] = horizon
@@ -70,6 +83,7 @@ class SapphirePreprocessingClient(SapphireAPIClient):
         if end_date:
             params["end_date"] = str(end_date)
 
+        logger.info("Reading runoff data (horizon=%s, code=%s)", horizon, code)
         records = self._get("/runoff/", params=params)
         return pd.DataFrame(records) if records else pd.DataFrame()
 
@@ -129,8 +143,8 @@ class SapphirePreprocessingClient(SapphireAPIClient):
                 "code": code,
                 "date": str(row[date_col]),
                 "discharge": row.get(discharge_col) if pd.notna(row.get(discharge_col)) else None,
-                "horizon_value": int(hv) if pd.notna(hv) else None,
-                "horizon_in_year": int(hiy) if pd.notna(hiy) else None,
+                "horizon_value": safe_int_conversion(hv, "horizon_value"),
+                "horizon_in_year": safe_int_conversion(hiy, "horizon_in_year"),
             }
             if predictor_col and predictor_col in df.columns:
                 val = row.get(predictor_col)
@@ -163,6 +177,10 @@ class SapphirePreprocessingClient(SapphireAPIClient):
         Returns:
             DataFrame with hydrograph data
         """
+        validate_enum_param(horizon, VALID_HORIZONS, "horizon")
+        validate_non_negative_int(skip, "skip")
+        validate_positive_int(limit, "limit")
+
         params: Dict[str, Any] = {"skip": skip, "limit": limit}
         if horizon:
             params["horizon"] = horizon
@@ -173,6 +191,7 @@ class SapphirePreprocessingClient(SapphireAPIClient):
         if end_date:
             params["end_date"] = str(end_date)
 
+        logger.info("Reading hydrograph data (horizon=%s, code=%s)", horizon, code)
         records = self._get("/hydrograph/", params=params)
         return pd.DataFrame(records) if records else pd.DataFrame()
 
@@ -236,9 +255,9 @@ class SapphirePreprocessingClient(SapphireAPIClient):
                 "horizon_type": horizon_type,
                 "code": code,
                 "date": str(row[date_col]),
-                "day_of_year": int(doy) if pd.notna(doy) else None,
-                "horizon_value": int(hv) if pd.notna(hv) else None,
-                "horizon_in_year": int(hiy) if pd.notna(hiy) else None,
+                "day_of_year": safe_int_conversion(doy, "day_of_year"),
+                "horizon_value": safe_int_conversion(hv, "horizon_value"),
+                "horizon_in_year": safe_int_conversion(hiy, "horizon_in_year"),
             }
             # Add statistical columns
             for col in stat_cols:
@@ -273,6 +292,10 @@ class SapphirePreprocessingClient(SapphireAPIClient):
         Returns:
             DataFrame with meteo data
         """
+        validate_enum_param(meteo_type, VALID_METEO_TYPES, "meteo_type")
+        validate_non_negative_int(skip, "skip")
+        validate_positive_int(limit, "limit")
+
         params: Dict[str, Any] = {"skip": skip, "limit": limit}
         if meteo_type:
             params["meteo_type"] = meteo_type
@@ -283,6 +306,7 @@ class SapphirePreprocessingClient(SapphireAPIClient):
         if end_date:
             params["end_date"] = str(end_date)
 
+        logger.info("Reading meteo data (meteo_type=%s, code=%s)", meteo_type, code)
         records = self._get("/meteo/", params=params)
         return pd.DataFrame(records) if records else pd.DataFrame()
 
@@ -335,7 +359,7 @@ class SapphirePreprocessingClient(SapphireAPIClient):
                 "meteo_type": meteo_type,
                 "code": code,
                 "date": str(row[date_col]),
-                "day_of_year": int(doy) if pd.notna(doy) else None,
+                "day_of_year": safe_int_conversion(doy, "day_of_year"),
             }
             val = row.get(value_col)
             record["value"] = val if pd.notna(val) else None
@@ -372,6 +396,10 @@ class SapphirePreprocessingClient(SapphireAPIClient):
         Returns:
             DataFrame with snow data
         """
+        validate_enum_param(snow_type, VALID_SNOW_TYPES, "snow_type")
+        validate_non_negative_int(skip, "skip")
+        validate_positive_int(limit, "limit")
+
         params: Dict[str, Any] = {"skip": skip, "limit": limit}
         if snow_type:
             params["snow_type"] = snow_type
@@ -382,6 +410,7 @@ class SapphirePreprocessingClient(SapphireAPIClient):
         if end_date:
             params["end_date"] = str(end_date)
 
+        logger.info("Reading snow data (snow_type=%s, code=%s)", snow_type, code)
         records = self._get("/snow/", params=params)
         return pd.DataFrame(records) if records else pd.DataFrame()
 

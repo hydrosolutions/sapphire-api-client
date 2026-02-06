@@ -455,3 +455,68 @@ class TestPreprocessingClientAPI:
         df = self.client.read_runoff()
         assert len(df) == 0
         assert isinstance(df, pd.DataFrame)
+
+
+class TestPreprocessingInputValidation:
+    """Tests for input validation in preprocessing read methods."""
+
+    def setup_method(self):
+        self.client = SapphirePreprocessingClient(
+            base_url="http://localhost:8000", max_retries=1
+        )
+
+    def test_invalid_horizon_raises(self):
+        with pytest.raises(ValueError, match="Invalid horizon 'weekly'"):
+            self.client.read_runoff(horizon="weekly")
+
+    def test_invalid_horizon_hydrograph(self):
+        with pytest.raises(ValueError, match="Invalid horizon"):
+            self.client.read_hydrograph(horizon="biweekly")
+
+    def test_invalid_meteo_type_raises(self):
+        with pytest.raises(ValueError, match="Invalid meteo_type 'X'"):
+            self.client.read_meteo(meteo_type="X")
+
+    def test_invalid_snow_type_raises(self):
+        with pytest.raises(ValueError, match="Invalid snow_type 'RAIN'"):
+            self.client.read_snow(snow_type="RAIN")
+
+    def test_negative_skip_raises(self):
+        with pytest.raises(ValueError, match="skip must be non-negative"):
+            self.client.read_runoff(skip=-1)
+
+    def test_zero_limit_raises(self):
+        with pytest.raises(ValueError, match="limit must be positive"):
+            self.client.read_runoff(limit=0)
+
+    def test_negative_limit_raises(self):
+        with pytest.raises(ValueError, match="limit must be positive"):
+            self.client.read_meteo(limit=-5)
+
+    def test_non_numeric_int_field_raises(self):
+        """Test that non-numeric values in integer fields give clear error."""
+        df = pd.DataFrame({
+            "date": [date(2024, 1, 1)],
+            "discharge": [100.0],
+            "horizon_value": ["abc"],
+            "horizon_in_year": [1],
+        })
+
+        with pytest.raises(ValueError, match="Cannot convert horizon_value"):
+            SapphirePreprocessingClient.prepare_runoff_records(
+                df=df, horizon_type="day", code="12345"
+            )
+
+    def test_non_numeric_day_of_year_raises(self):
+        """Test that non-numeric day_of_year gives clear error."""
+        df = pd.DataFrame({
+            "date": [date(2024, 1, 1)],
+            "day_of_year": ["bad"],
+            "horizon_value": [1],
+            "horizon_in_year": [1],
+        })
+
+        with pytest.raises(ValueError, match="Cannot convert day_of_year"):
+            SapphirePreprocessingClient.prepare_hydrograph_records(
+                df=df, horizon_type="day", code="12345"
+            )

@@ -5,12 +5,19 @@ Handles forecasts, linear regression forecasts, and skill metrics.
 """
 
 import logging
+import warnings
 from datetime import date
 from typing import Any, Dict, List, Literal, Optional, Union
 
 import pandas as pd
 
 from sapphire_api_client.client import SapphireAPIClient
+from sapphire_api_client.validators import (
+    VALID_HORIZONS,
+    validate_enum_param,
+    validate_non_negative_int,
+    validate_positive_int,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +75,10 @@ class SapphirePostprocessingClient(SapphireAPIClient):
         Returns:
             DataFrame with forecast data
         """
+        validate_enum_param(horizon, VALID_HORIZONS, "horizon")
+        validate_non_negative_int(skip, "skip")
+        validate_positive_int(limit, "limit")
+
         params: Dict[str, Any] = {"skip": skip, "limit": limit}
         if horizon:
             params["horizon"] = horizon
@@ -86,6 +97,7 @@ class SapphirePostprocessingClient(SapphireAPIClient):
         if end_target:
             params["end_target"] = str(end_target)
 
+        logger.info("Reading forecasts (horizon=%s, code=%s, model=%s)", horizon, code, model)
         records = self._get("/forecast/", params=params)
         return pd.DataFrame(records) if records else pd.DataFrame()
 
@@ -179,6 +191,10 @@ class SapphirePostprocessingClient(SapphireAPIClient):
         Returns:
             DataFrame with LR forecast data
         """
+        validate_enum_param(horizon, VALID_HORIZONS, "horizon")
+        validate_non_negative_int(skip, "skip")
+        validate_positive_int(limit, "limit")
+
         params: Dict[str, Any] = {"skip": skip, "limit": limit}
         if horizon:
             params["horizon"] = horizon
@@ -189,6 +205,7 @@ class SapphirePostprocessingClient(SapphireAPIClient):
         if end_date:
             params["end_date"] = str(end_date)
 
+        logger.info("Reading LR forecasts (horizon=%s, code=%s)", horizon, code)
         records = self._get("/lr-forecast/", params=params)
         return pd.DataFrame(records) if records else pd.DataFrame()
 
@@ -231,6 +248,10 @@ class SapphirePostprocessingClient(SapphireAPIClient):
         Returns:
             DataFrame with skill metrics
         """
+        validate_enum_param(horizon, VALID_HORIZONS, "horizon")
+        validate_non_negative_int(skip, "skip")
+        validate_positive_int(limit, "limit")
+
         params: Dict[str, Any] = {"skip": skip, "limit": limit}
         if horizon:
             params["horizon"] = horizon
@@ -243,6 +264,7 @@ class SapphirePostprocessingClient(SapphireAPIClient):
         if end_date:
             params["end_date"] = str(end_date)
 
+        logger.info("Reading skill metrics (horizon=%s, code=%s, model=%s)", horizon, code, model)
         records = self._get("/skill-metric/", params=params)
         return pd.DataFrame(records) if records else pd.DataFrame()
 
@@ -280,6 +302,15 @@ class SapphirePostprocessingClient(SapphireAPIClient):
             List of records ready for API
         """
         metric_cols = ["mae", "rmse", "nse", "kge", "bias", "r2", "pbias"]
+
+        found_metrics = [c for c in metric_cols if c in df.columns]
+        if not found_metrics:
+            warnings.warn(
+                f"No metric columns found in DataFrame. "
+                f"Expected at least one of: {metric_cols}",
+                UserWarning,
+                stacklevel=2,
+            )
 
         records = []
         for _, row in df.iterrows():
