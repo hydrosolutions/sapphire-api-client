@@ -171,6 +171,19 @@ class TestPrepareSkillMetricRecords:
         assert records[0]["nse"] is None
 
 
+class TestPrepareForecastRecordsValidation:
+    """Tests for error handling in prepare_forecast_records."""
+
+    def test_missing_date_column(self):
+        """Test that missing date column raises ValueError."""
+        df = pd.DataFrame({"forecast": [100.0]})
+
+        with pytest.raises(ValueError, match="missing required columns.*fecha"):
+            SapphirePostprocessingClient.prepare_forecast_records(
+                df=df, horizon_type="pentad", code="12345", date_col="fecha"
+            )
+
+
 class TestPostprocessingClientAPI:
     """Tests for PostprocessingClient API calls."""
 

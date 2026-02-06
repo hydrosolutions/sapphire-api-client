@@ -166,8 +166,16 @@ class SapphireAPIClient:
                 response=response.text,
             )
         if response.status_code >= 400:
+            detail = ""
+            try:
+                body = response.json()
+                if isinstance(body, dict) and "detail" in body:
+                    detail = f": {body['detail']}"
+            except (ValueError, requests.exceptions.JSONDecodeError):
+                if response.text:
+                    detail = f": {response.text}"
             raise SapphireAPIError(
-                f"API request failed: {response.status_code}",
+                f"API request failed ({response.status_code}){detail}",
                 status_code=response.status_code,
                 response=response.text,
             )

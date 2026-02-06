@@ -286,6 +286,80 @@ class TestAuthentication:
         assert "Access denied" in str(exc_info.value)
 
 
+class TestImprovedErrorMessages:
+    """Tests for improved error messages with server details."""
+
+    def setup_method(self):
+        """Set up test client."""
+        self.client = SapphireAPIClient(
+            base_url="http://localhost:8000",
+            max_retries=1,
+        )
+
+    @responses.activate
+    def test_400_with_json_detail(self):
+        """Test that 400 errors surface server detail field."""
+        responses.add(
+            responses.POST,
+            "http://localhost:8000/runoff/",
+            json={"detail": "Invalid horizon_type: must be one of day, pentad, decade"},
+            status=400,
+        )
+
+        with pytest.raises(SapphireAPIError) as exc_info:
+            self.client._post("/runoff/", {"data": []})
+
+        assert "Invalid horizon_type" in str(exc_info.value)
+        assert exc_info.value.status_code == 400
+
+    @responses.activate
+    def test_422_with_validation_detail(self):
+        """Test that 422 errors surface validation details."""
+        responses.add(
+            responses.POST,
+            "http://localhost:8000/runoff/",
+            json={"detail": [{"loc": ["body", "discharge"], "msg": "value is not a valid number"}]},
+            status=422,
+        )
+
+        with pytest.raises(SapphireAPIError) as exc_info:
+            self.client._post("/runoff/", {"data": []})
+
+        assert "422" in str(exc_info.value)
+        assert "value is not a valid number" in str(exc_info.value)
+
+    @responses.activate
+    def test_400_with_plain_text_response(self):
+        """Test that 400 errors handle plain text responses."""
+        responses.add(
+            responses.POST,
+            "http://localhost:8000/runoff/",
+            body="Bad Request: missing required field",
+            status=400,
+            content_type="text/plain",
+        )
+
+        with pytest.raises(SapphireAPIError) as exc_info:
+            self.client._post("/runoff/", {"data": []})
+
+        assert "missing required field" in str(exc_info.value)
+
+    @responses.activate
+    def test_500_without_detail(self):
+        """Test that 500 errors without detail still include response text."""
+        responses.add(
+            responses.POST,
+            "http://localhost:8000/runoff/",
+            json={"error": "Internal server error"},
+            status=500,
+        )
+
+        with pytest.raises(SapphireAPIError) as exc_info:
+            self.client._post("/runoff/", {"data": []})
+
+        assert "500" in str(exc_info.value)
+
+
 class TestSapphireAPIError:
     """Tests for SapphireAPIError exception."""
 

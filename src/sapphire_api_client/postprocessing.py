@@ -6,7 +6,7 @@ Handles forecasts, linear regression forecasts, and skill metrics.
 
 import logging
 from datetime import date
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import pandas as pd
 
@@ -104,7 +104,7 @@ class SapphirePostprocessingClient(SapphireAPIClient):
     @staticmethod
     def prepare_forecast_records(
         df: pd.DataFrame,
-        horizon_type: str,
+        horizon_type: Literal["day", "pentad", "decade", "month", "season", "year"],
         code: str,
         date_col: str = "date",
         forecast_col: str = "forecast",
@@ -126,6 +126,11 @@ class SapphirePostprocessingClient(SapphireAPIClient):
         Returns:
             List of records ready for API
         """
+        required_cols = [date_col]
+        missing = [c for c in required_cols if c not in df.columns]
+        if missing:
+            raise ValueError(f"DataFrame missing required columns: {missing}")
+
         records = []
         for _, row in df.iterrows():
             record: Dict[str, Any] = {
@@ -256,7 +261,7 @@ class SapphirePostprocessingClient(SapphireAPIClient):
     @staticmethod
     def prepare_skill_metric_records(
         df: pd.DataFrame,
-        horizon_type: str,
+        horizon_type: Literal["day", "pentad", "decade", "month", "season", "year"],
         code: str,
         model: str,
     ) -> List[Dict[str, Any]]:
