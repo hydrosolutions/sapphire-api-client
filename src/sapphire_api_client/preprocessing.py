@@ -6,11 +6,20 @@ Handles runoff, hydrograph, meteorological, and snow data.
 
 import logging
 from datetime import date
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import pandas as pd
 
 from sapphire_api_client.client import SapphireAPIClient
+from sapphire_api_client.validators import (
+    VALID_HORIZONS,
+    VALID_METEO_TYPES,
+    VALID_SNOW_TYPES,
+    safe_int_conversion,
+    validate_enum_param,
+    validate_non_negative_int,
+    validate_positive_int,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +69,10 @@ class SapphirePreprocessingClient(SapphireAPIClient):
         Returns:
             DataFrame with runoff data
         """
+        validate_enum_param(horizon, VALID_HORIZONS, "horizon")
+        validate_non_negative_int(skip, "skip")
+        validate_positive_int(limit, "limit")
+
         params: Dict[str, Any] = {"skip": skip, "limit": limit}
         if horizon:
             params["horizon"] = horizon
@@ -70,6 +83,7 @@ class SapphirePreprocessingClient(SapphireAPIClient):
         if end_date:
             params["end_date"] = str(end_date)
 
+        logger.info("Reading runoff data (horizon=%s, code=%s)", horizon, code)
         records = self._get("/runoff/", params=params)
         return pd.DataFrame(records) if records else pd.DataFrame()
 
@@ -91,7 +105,7 @@ class SapphirePreprocessingClient(SapphireAPIClient):
     @staticmethod
     def prepare_runoff_records(
         df: pd.DataFrame,
-        horizon_type: str,
+        horizon_type: Literal["day", "pentad", "decade", "month", "season", "year"],
         code: str,
         date_col: str = "date",
         discharge_col: str = "discharge",
@@ -115,15 +129,22 @@ class SapphirePreprocessingClient(SapphireAPIClient):
         Returns:
             List of records ready for API
         """
+        required_cols = [date_col, horizon_value_col, horizon_in_year_col]
+        missing = [c for c in required_cols if c not in df.columns]
+        if missing:
+            raise ValueError(f"DataFrame missing required columns: {missing}")
+
         records = []
         for _, row in df.iterrows():
+            hv = row[horizon_value_col]
+            hiy = row[horizon_in_year_col]
             record: Dict[str, Any] = {
                 "horizon_type": horizon_type,
                 "code": code,
                 "date": str(row[date_col]),
                 "discharge": row.get(discharge_col) if pd.notna(row.get(discharge_col)) else None,
-                "horizon_value": int(row[horizon_value_col]),
-                "horizon_in_year": int(row[horizon_in_year_col]),
+                "horizon_value": safe_int_conversion(hv, "horizon_value"),
+                "horizon_in_year": safe_int_conversion(hiy, "horizon_in_year"),
             }
             if predictor_col and predictor_col in df.columns:
                 val = row.get(predictor_col)
@@ -156,6 +177,10 @@ class SapphirePreprocessingClient(SapphireAPIClient):
         Returns:
             DataFrame with hydrograph data
         """
+        validate_enum_param(horizon, VALID_HORIZONS, "horizon")
+        validate_non_negative_int(skip, "skip")
+        validate_positive_int(limit, "limit")
+
         params: Dict[str, Any] = {"skip": skip, "limit": limit}
         if horizon:
             params["horizon"] = horizon
@@ -166,6 +191,7 @@ class SapphirePreprocessingClient(SapphireAPIClient):
         if end_date:
             params["end_date"] = str(end_date)
 
+        logger.info("Reading hydrograph data (horizon=%s, code=%s)", horizon, code)
         records = self._get("/hydrograph/", params=params)
         return pd.DataFrame(records) if records else pd.DataFrame()
 
@@ -184,7 +210,7 @@ class SapphirePreprocessingClient(SapphireAPIClient):
     @staticmethod
     def prepare_hydrograph_records(
         df: pd.DataFrame,
-        horizon_type: str,
+        horizon_type: Literal["day", "pentad", "decade", "month", "season", "year"],
         code: str,
         date_col: str = "date",
         day_of_year_col: str = "day_of_year",
@@ -209,6 +235,11 @@ class SapphirePreprocessingClient(SapphireAPIClient):
         Returns:
             List of records ready for API
         """
+        required_cols = [date_col, day_of_year_col, horizon_value_col, horizon_in_year_col]
+        missing = [c for c in required_cols if c not in df.columns]
+        if missing:
+            raise ValueError(f"DataFrame missing required columns: {missing}")
+
         stat_cols = [
             "count", "mean", "std", "min", "max",
             "q05", "q25", "q50", "q75", "q95",
@@ -217,13 +248,16 @@ class SapphirePreprocessingClient(SapphireAPIClient):
 
         records = []
         for _, row in df.iterrows():
+            doy = row[day_of_year_col]
+            hv = row[horizon_value_col]
+            hiy = row[horizon_in_year_col]
             record: Dict[str, Any] = {
                 "horizon_type": horizon_type,
                 "code": code,
                 "date": str(row[date_col]),
-                "day_of_year": int(row[day_of_year_col]),
-                "horizon_value": int(row[horizon_value_col]),
-                "horizon_in_year": int(row[horizon_in_year_col]),
+                "day_of_year": safe_int_conversion(doy, "day_of_year"),
+                "horizon_value": safe_int_conversion(hv, "horizon_value"),
+                "horizon_in_year": safe_int_conversion(hiy, "horizon_in_year"),
             }
             # Add statistical columns
             for col in stat_cols:
@@ -258,6 +292,10 @@ class SapphirePreprocessingClient(SapphireAPIClient):
         Returns:
             DataFrame with meteo data
         """
+        validate_enum_param(meteo_type, VALID_METEO_TYPES, "meteo_type")
+        validate_non_negative_int(skip, "skip")
+        validate_positive_int(limit, "limit")
+
         params: Dict[str, Any] = {"skip": skip, "limit": limit}
         if meteo_type:
             params["meteo_type"] = meteo_type
@@ -268,6 +306,7 @@ class SapphirePreprocessingClient(SapphireAPIClient):
         if end_date:
             params["end_date"] = str(end_date)
 
+        logger.info("Reading meteo data (meteo_type=%s, code=%s)", meteo_type, code)
         records = self._get("/meteo/", params=params)
         return pd.DataFrame(records) if records else pd.DataFrame()
 
@@ -286,7 +325,7 @@ class SapphirePreprocessingClient(SapphireAPIClient):
     @staticmethod
     def prepare_meteo_records(
         df: pd.DataFrame,
-        meteo_type: str,
+        meteo_type: Literal["T", "P"],
         code: str,
         date_col: str = "date",
         value_col: str = "value",
@@ -308,13 +347,19 @@ class SapphirePreprocessingClient(SapphireAPIClient):
         Returns:
             List of records ready for API
         """
+        required_cols = [date_col, day_of_year_col]
+        missing = [c for c in required_cols if c not in df.columns]
+        if missing:
+            raise ValueError(f"DataFrame missing required columns: {missing}")
+
         records = []
         for _, row in df.iterrows():
+            doy = row[day_of_year_col]
             record: Dict[str, Any] = {
                 "meteo_type": meteo_type,
                 "code": code,
                 "date": str(row[date_col]),
-                "day_of_year": int(row[day_of_year_col]),
+                "day_of_year": safe_int_conversion(doy, "day_of_year"),
             }
             val = row.get(value_col)
             record["value"] = val if pd.notna(val) else None
@@ -351,6 +396,10 @@ class SapphirePreprocessingClient(SapphireAPIClient):
         Returns:
             DataFrame with snow data
         """
+        validate_enum_param(snow_type, VALID_SNOW_TYPES, "snow_type")
+        validate_non_negative_int(skip, "skip")
+        validate_positive_int(limit, "limit")
+
         params: Dict[str, Any] = {"skip": skip, "limit": limit}
         if snow_type:
             params["snow_type"] = snow_type
@@ -361,6 +410,7 @@ class SapphirePreprocessingClient(SapphireAPIClient):
         if end_date:
             params["end_date"] = str(end_date)
 
+        logger.info("Reading snow data (snow_type=%s, code=%s)", snow_type, code)
         records = self._get("/snow/", params=params)
         return pd.DataFrame(records) if records else pd.DataFrame()
 
@@ -379,7 +429,7 @@ class SapphirePreprocessingClient(SapphireAPIClient):
     @staticmethod
     def prepare_snow_records(
         df: pd.DataFrame,
-        snow_type: str,
+        snow_type: Literal["HS", "ROF", "SWE"],
         code: str,
         date_col: str = "date",
         value_col: str = "value",
@@ -401,6 +451,11 @@ class SapphirePreprocessingClient(SapphireAPIClient):
         Returns:
             List of records ready for API
         """
+        required_cols = [date_col]
+        missing = [c for c in required_cols if c not in df.columns]
+        if missing:
+            raise ValueError(f"DataFrame missing required columns: {missing}")
+
         zone_cols = [f"value{i}" for i in range(1, 15)]
 
         records = []

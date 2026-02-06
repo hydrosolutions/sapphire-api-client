@@ -29,6 +29,10 @@ jobs:
         if: matrix.python-version == '3.12'
         run: uv run mypy
 
+      - name: Security audit
+        if: matrix.python-version == '3.12'
+        run: uv run pip-audit
+
       - name: Run tests
         run: uv run pytest --cov=src/sapphire_api_client --cov-report=xml
 

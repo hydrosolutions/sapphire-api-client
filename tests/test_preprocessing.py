@@ -219,6 +219,125 @@ class TestPrepareSnowRecords:
         assert records[0]["value3"] == 60.0
 
 
+class TestPrepareRunoffRecordsValidation:
+    """Tests for error handling in prepare_runoff_records."""
+
+    def test_missing_required_column(self):
+        """Test that missing required columns raise ValueError with clear message."""
+        df = pd.DataFrame({
+            "discharge": [100.0],
+            "horizon_value": [1],
+            "horizon_in_year": [1],
+        })
+
+        with pytest.raises(ValueError, match="missing required columns.*date"):
+            SapphirePreprocessingClient.prepare_runoff_records(
+                df=df, horizon_type="day", code="12345"
+            )
+
+    def test_missing_multiple_required_columns(self):
+        """Test that all missing columns are listed in error."""
+        df = pd.DataFrame({"discharge": [100.0]})
+
+        with pytest.raises(ValueError, match="missing required columns") as exc_info:
+            SapphirePreprocessingClient.prepare_runoff_records(
+                df=df, horizon_type="day", code="12345"
+            )
+        msg = str(exc_info.value)
+        assert "date" in msg
+        assert "horizon_value" in msg
+        assert "horizon_in_year" in msg
+
+    def test_nan_in_integer_fields(self):
+        """Test that NaN in integer fields produces None instead of crashing."""
+        df = pd.DataFrame({
+            "date": [date(2024, 1, 1)],
+            "discharge": [100.0],
+            "horizon_value": [float("nan")],
+            "horizon_in_year": [1],
+        })
+
+        records = SapphirePreprocessingClient.prepare_runoff_records(
+            df=df, horizon_type="day", code="12345"
+        )
+        assert records[0]["horizon_value"] is None
+        assert records[0]["horizon_in_year"] == 1
+
+
+class TestPrepareHydrographRecordsValidation:
+    """Tests for error handling in prepare_hydrograph_records."""
+
+    def test_missing_required_column(self):
+        """Test that missing required columns raise ValueError."""
+        df = pd.DataFrame({
+            "date": [date(2024, 1, 1)],
+            "mean": [100.0],
+        })
+
+        with pytest.raises(ValueError, match="missing required columns.*day_of_year"):
+            SapphirePreprocessingClient.prepare_hydrograph_records(
+                df=df, horizon_type="day", code="12345"
+            )
+
+    def test_nan_in_integer_fields(self):
+        """Test that NaN in integer fields produces None instead of crashing."""
+        df = pd.DataFrame({
+            "date": [date(2024, 1, 1)],
+            "day_of_year": [float("nan")],
+            "horizon_value": [1],
+            "horizon_in_year": [1],
+            "mean": [100.0],
+        })
+
+        records = SapphirePreprocessingClient.prepare_hydrograph_records(
+            df=df, horizon_type="day", code="12345"
+        )
+        assert records[0]["day_of_year"] is None
+        assert records[0]["horizon_value"] == 1
+
+
+class TestPrepareMeteoRecordsValidation:
+    """Tests for error handling in prepare_meteo_records."""
+
+    def test_missing_required_column(self):
+        """Test that missing date column raises ValueError."""
+        df = pd.DataFrame({
+            "value": [15.5],
+            "day_of_year": [1],
+        })
+
+        with pytest.raises(ValueError, match="missing required columns.*fecha"):
+            SapphirePreprocessingClient.prepare_meteo_records(
+                df=df, meteo_type="T", code="12345", date_col="fecha"
+            )
+
+    def test_nan_in_day_of_year(self):
+        """Test that NaN in day_of_year produces None instead of crashing."""
+        df = pd.DataFrame({
+            "date": [date(2024, 1, 1)],
+            "value": [15.5],
+            "day_of_year": [float("nan")],
+        })
+
+        records = SapphirePreprocessingClient.prepare_meteo_records(
+            df=df, meteo_type="T", code="12345"
+        )
+        assert records[0]["day_of_year"] is None
+
+
+class TestPrepareSnowRecordsValidation:
+    """Tests for error handling in prepare_snow_records."""
+
+    def test_missing_date_column(self):
+        """Test that missing date column raises ValueError."""
+        df = pd.DataFrame({"value": [50.0]})
+
+        with pytest.raises(ValueError, match="missing required columns.*fecha"):
+            SapphirePreprocessingClient.prepare_snow_records(
+                df=df, snow_type="HS", code="12345", date_col="fecha"
+            )
+
+
 class TestPreprocessingClientAPI:
     """Tests for PreprocessingClient API calls."""
 
@@ -336,3 +455,68 @@ class TestPreprocessingClientAPI:
         df = self.client.read_runoff()
         assert len(df) == 0
         assert isinstance(df, pd.DataFrame)
+
+
+class TestPreprocessingInputValidation:
+    """Tests for input validation in preprocessing read methods."""
+
+    def setup_method(self):
+        self.client = SapphirePreprocessingClient(
+            base_url="http://localhost:8000", max_retries=1
+        )
+
+    def test_invalid_horizon_raises(self):
+        with pytest.raises(ValueError, match="Invalid horizon 'weekly'"):
+            self.client.read_runoff(horizon="weekly")
+
+    def test_invalid_horizon_hydrograph(self):
+        with pytest.raises(ValueError, match="Invalid horizon"):
+            self.client.read_hydrograph(horizon="biweekly")
+
+    def test_invalid_meteo_type_raises(self):
+        with pytest.raises(ValueError, match="Invalid meteo_type 'X'"):
+            self.client.read_meteo(meteo_type="X")
+
+    def test_invalid_snow_type_raises(self):
+        with pytest.raises(ValueError, match="Invalid snow_type 'RAIN'"):
+            self.client.read_snow(snow_type="RAIN")
+
+    def test_negative_skip_raises(self):
+        with pytest.raises(ValueError, match="skip must be non-negative"):
+            self.client.read_runoff(skip=-1)
+
+    def test_zero_limit_raises(self):
+        with pytest.raises(ValueError, match="limit must be positive"):
+            self.client.read_runoff(limit=0)
+
+    def test_negative_limit_raises(self):
+        with pytest.raises(ValueError, match="limit must be positive"):
+            self.client.read_meteo(limit=-5)
+
+    def test_non_numeric_int_field_raises(self):
+        """Test that non-numeric values in integer fields give clear error."""
+        df = pd.DataFrame({
+            "date": [date(2024, 1, 1)],
+            "discharge": [100.0],
+            "horizon_value": ["abc"],
+            "horizon_in_year": [1],
+        })
+
+        with pytest.raises(ValueError, match="Cannot convert horizon_value"):
+            SapphirePreprocessingClient.prepare_runoff_records(
+                df=df, horizon_type="day", code="12345"
+            )
+
+    def test_non_numeric_day_of_year_raises(self):
+        """Test that non-numeric day_of_year gives clear error."""
+        df = pd.DataFrame({
+            "date": [date(2024, 1, 1)],
+            "day_of_year": ["bad"],
+            "horizon_value": [1],
+            "horizon_in_year": [1],
+        })
+
+        with pytest.raises(ValueError, match="Cannot convert day_of_year"):
+            SapphirePreprocessingClient.prepare_hydrograph_records(
+                df=df, horizon_type="day", code="12345"
+            )

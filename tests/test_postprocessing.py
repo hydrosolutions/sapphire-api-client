@@ -2,6 +2,8 @@
 Tests for SapphirePostprocessingClient.
 """
 
+import warnings
+
 import pytest
 import responses
 import pandas as pd
@@ -169,6 +171,19 @@ class TestPrepareSkillMetricRecords:
         assert records[0]["mae"] == 10.5
         assert records[0]["rmse"] is None
         assert records[0]["nse"] is None
+
+
+class TestPrepareForecastRecordsValidation:
+    """Tests for error handling in prepare_forecast_records."""
+
+    def test_missing_date_column(self):
+        """Test that missing date column raises ValueError."""
+        df = pd.DataFrame({"forecast": [100.0]})
+
+        with pytest.raises(ValueError, match="missing required columns.*fecha"):
+            SapphirePostprocessingClient.prepare_forecast_records(
+                df=df, horizon_type="pentad", code="12345", date_col="fecha"
+            )
 
 
 class TestPostprocessingClientAPI:
@@ -341,3 +356,41 @@ class TestPostprocessingClientAPI:
         )
 
         assert self.client.health_check() is True
+
+
+class TestPostprocessingInputValidation:
+    """Tests for input validation in postprocessing read methods."""
+
+    def setup_method(self):
+        self.client = SapphirePostprocessingClient(
+            base_url="http://localhost:8000", max_retries=1
+        )
+
+    def test_invalid_horizon_raises(self):
+        with pytest.raises(ValueError, match="Invalid horizon 'weekly'"):
+            self.client.read_forecasts(horizon="weekly")
+
+    def test_invalid_horizon_skill_metrics(self):
+        with pytest.raises(ValueError, match="Invalid horizon"):
+            self.client.read_skill_metrics(horizon="biweekly")
+
+    def test_negative_skip_raises(self):
+        with pytest.raises(ValueError, match="skip must be non-negative"):
+            self.client.read_forecasts(skip=-1)
+
+    def test_zero_limit_raises(self):
+        with pytest.raises(ValueError, match="limit must be positive"):
+            self.client.read_forecasts(limit=0)
+
+    def test_missing_metric_columns_warns(self):
+        """Test warning when no metric columns found."""
+        df = pd.DataFrame({"unrelated_col": [1.0]})
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            records = SapphirePostprocessingClient.prepare_skill_metric_records(
+                df=df, horizon_type="pentad", code="12345", model="LR"
+            )
+            assert len(w) == 1
+            assert "No metric columns found" in str(w[0].message)
+        assert len(records) == 1
