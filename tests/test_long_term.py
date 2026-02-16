@@ -360,7 +360,7 @@ class TestLongTermForecastClientAPI:
         assert "skip=10" in url
         assert "limit=50" in url
         # Must NOT use short-forecast param names
-        assert "horizon=" not in url or "horizon_type" in url
+        assert "horizon=" not in url
 
     @responses.activate
     def test_write_long_term_forecasts_calls_post_batched(self):
