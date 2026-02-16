@@ -48,28 +48,90 @@ count = client.write_runoff(records)
 print(f"Wrote {count} records")
 ```
 
-### Postprocessing Client
+### Short-Term Forecast Client
+
+```python
+from sapphire_api_client import SapphireShortTermForecastClient
+
+client = SapphireShortTermForecastClient()
+
+# Read short-term forecasts
+forecasts = client.read_short_term_forecasts(
+    horizon="pentad",
+    code="12345",
+    model="TFT"
+)
+
+# Write short-term forecasts
+records = SapphireShortTermForecastClient.prepare_short_term_forecast_records(
+    df=my_dataframe,
+    horizon_type="pentad",
+    code="12345"
+)
+client.write_short_term_forecasts(records)
+
+# Read linear regression forecasts
+lr_forecasts = client.read_lr_forecasts(horizon="pentad", code="12345")
+```
+
+### Long-Term Forecast Client
+
+```python
+from sapphire_api_client import SapphireLongTermForecastClient
+
+client = SapphireLongTermForecastClient()
+
+# Read long-term forecasts (monthly, quarterly, seasonal)
+forecasts = client.read_long_term_forecasts(
+    horizon_type="month",
+    horizon_value=7,
+    code="15013",
+    model="GBT"
+)
+
+# Write long-term forecasts
+records = SapphireLongTermForecastClient.prepare_long_term_forecast_records(
+    df=my_dataframe,
+    horizon_type="month",
+    horizon_value=7,
+    model_type="GBT"
+)
+client.write_long_term_forecasts(records)
+```
+
+### Combined Postprocessing Client
+
+For convenience, `SapphirePostprocessingClient` combines both short-term and long-term forecast clients into a single interface. It also provides skill metric methods.
 
 ```python
 from sapphire_api_client import SapphirePostprocessingClient
 
 client = SapphirePostprocessingClient()
 
-# Read forecasts
-forecasts = client.read_forecasts(
-    horizon="pentad",
-    code="12345"
-)
-
-# Write forecasts
-records = SapphirePostprocessingClient.prepare_forecast_records(df, ...)
-client.write_forecasts(records)
+# All short-term, long-term, and skill metric methods are available
+forecasts = client.read_short_term_forecasts(horizon="pentad", code="12345")
+long_forecasts = client.read_long_term_forecasts(horizon_type="month", code="15013")
+metrics = client.read_skill_metrics(horizon="pentad", code="12345")
 ```
+
+## Client Architecture
+
+```
+SapphireAPIClient (base)                    # HTTP methods, retry logic, batching
+├── SapphirePreprocessingClient             # Runoff, hydrograph, meteo, snow
+└── SapphirePostprocessingBase              # Skill metrics (shared)
+    ├── SapphireShortTermForecastClient     # Short-term forecasts + LR forecasts
+    ├── SapphireLongTermForecastClient      # Long-term forecasts (quantile predictions)
+    └── SapphirePostprocessingClient        # Facade combining both forecast families
+```
+
+Use the focused clients (`SapphireShortTermForecastClient`, `SapphireLongTermForecastClient`) when you only need one forecast family. Use `SapphirePostprocessingClient` when you need access to both.
 
 ## Features
 
 - Automatic retry with exponential backoff on transient failures
 - Batch posting for large datasets
+- Input validation with clear error messages
 - Strict error handling (fails fast on persistent errors)
 - Type-safe record preparation from pandas DataFrames
 - Support for all SAPPHIRE data types:
@@ -77,7 +139,10 @@ client.write_forecasts(records)
   - Hydrograph (statistical summaries)
   - Meteorological data (temperature, precipitation)
   - Snow data (height, SWE, runoff)
-  - Forecasts and skill metrics
+  - Short-term forecasts with confidence bounds (day, pentad, decade, month, season, year)
+  - Long-term forecasts with quantile predictions (month, quarter, season)
+  - Linear regression forecasts
+  - Skill metrics (MAE, RMSE, NSE, KGE, bias, R2, PBIAS)
 
 ## Configuration
 
