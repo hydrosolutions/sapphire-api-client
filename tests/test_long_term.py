@@ -129,6 +129,145 @@ class TestPrepareLongTermForecastRecords:
             )
 
 
+class TestPrepareLongTermForecastRecordsEdgeCases:
+    """Edge case tests for prepare_long_term_forecast_records."""
+
+    def test_empty_dataframe_returns_empty_list(self):
+        """Empty DataFrame produces no records."""
+        df = pd.DataFrame(columns=["code", "date", "valid_from", "valid_to"])
+
+        records = SapphireLongTermForecastClient.prepare_long_term_forecast_records(
+            df=df, horizon_type="month", horizon_value=7, model_type="GBT",
+        )
+
+        assert records == []
+
+    def test_all_nan_quantile_values(self):
+        """All-NaN quantile columns convert to None."""
+        df = pd.DataFrame({
+            "code": ["15013"],
+            "date": [date(2024, 6, 15)],
+            "valid_from": [date(2024, 7, 1)],
+            "valid_to": [date(2024, 7, 31)],
+            "q": [float("nan")],
+            "q_obs": [float("nan")],
+            "q50": [float("nan")],
+            "q05": [float("nan")],
+            "q95": [float("nan")],
+        })
+
+        records = SapphireLongTermForecastClient.prepare_long_term_forecast_records(
+            df=df, horizon_type="month", horizon_value=7, model_type="GBT",
+        )
+
+        assert len(records) == 1
+        r = records[0]
+        assert r["q"] is None
+        assert r["q_obs"] is None
+        assert r["q50"] is None
+        assert r["q05"] is None
+        assert r["q95"] is None
+
+    def test_zero_quantile_values_preserved(self):
+        """Zero is a valid quantile value, not treated as missing."""
+        df = pd.DataFrame({
+            "code": ["15013"],
+            "date": [date(2024, 6, 15)],
+            "valid_from": [date(2024, 7, 1)],
+            "valid_to": [date(2024, 7, 31)],
+            "q": [0.0],
+            "q50": [0.0],
+        })
+
+        records = SapphireLongTermForecastClient.prepare_long_term_forecast_records(
+            df=df, horizon_type="month", horizon_value=7, model_type="GBT",
+        )
+
+        assert records[0]["q"] == 0.0
+        assert records[0]["q50"] == 0.0
+
+    def test_extreme_values(self):
+        """Very small and very large quantile values pass through unchanged."""
+        df = pd.DataFrame({
+            "code": ["15013"],
+            "date": [date(2024, 6, 15)],
+            "valid_from": [date(2024, 7, 1)],
+            "valid_to": [date(2024, 7, 31)],
+            "q": [0.001],
+            "q95": [99999.99],
+        })
+
+        records = SapphireLongTermForecastClient.prepare_long_term_forecast_records(
+            df=df, horizon_type="month", horizon_value=7, model_type="GBT",
+        )
+
+        assert records[0]["q"] == 0.001
+        assert records[0]["q95"] == 99999.99
+
+    def test_multi_entity_multiple_stations(self):
+        """Multiple stations in one DataFrame each get their own code."""
+        df = pd.DataFrame({
+            "code": ["15013", "15014", "15015"],
+            "date": [date(2024, 6, 15)] * 3,
+            "valid_from": [date(2024, 7, 1)] * 3,
+            "valid_to": [date(2024, 7, 31)] * 3,
+            "q": [100.0, 200.0, 300.0],
+        })
+
+        records = SapphireLongTermForecastClient.prepare_long_term_forecast_records(
+            df=df, horizon_type="month", horizon_value=7, model_type="GBT",
+        )
+
+        assert len(records) == 3
+        assert [r["code"] for r in records] == ["15013", "15014", "15015"]
+        assert [r["q"] for r in records] == [100.0, 200.0, 300.0]
+        # All share the same fixed parameters
+        assert all(r["horizon_type"] == "month" for r in records)
+        assert all(r["model_type"] == "GBT" for r in records)
+
+    def test_row_order_preserved(self):
+        """Output record order matches input DataFrame row order."""
+        df = pd.DataFrame({
+            "code": ["15015", "15013", "15014"],
+            "date": [date(2024, 8, 1), date(2024, 6, 15), date(2024, 7, 1)],
+            "valid_from": [date(2024, 9, 1), date(2024, 7, 1), date(2024, 8, 1)],
+            "valid_to": [date(2024, 9, 30), date(2024, 7, 31), date(2024, 8, 31)],
+        })
+
+        records = SapphireLongTermForecastClient.prepare_long_term_forecast_records(
+            df=df, horizon_type="month", horizon_value=7, model_type="GBT",
+        )
+
+        assert [r["code"] for r in records] == ["15015", "15013", "15014"]
+        assert [r["date"] for r in records] == ["2024-08-01", "2024-06-15", "2024-07-01"]
+
+    def test_custom_column_names(self):
+        """Custom column name overrides are respected."""
+        df = pd.DataFrame({
+            "station_id": ["15013"],
+            "issue_date": [date(2024, 6, 15)],
+            "start": [date(2024, 7, 1)],
+            "end": [date(2024, 7, 31)],
+        })
+
+        records = SapphireLongTermForecastClient.prepare_long_term_forecast_records(
+            df=df,
+            horizon_type="month",
+            horizon_value=7,
+            model_type="GBT",
+            code_col="station_id",
+            date_col="issue_date",
+            valid_from_col="start",
+            valid_to_col="end",
+        )
+
+        assert len(records) == 1
+        assert records[0]["code"] == "15013"
+        assert records[0]["date"] == "2024-06-15"
+        assert records[0]["valid_from"] == "2024-07-01"
+        assert records[0]["valid_to"] == "2024-07-31"
+
+
 class TestLongTermForecastClientAPI:
     """Tests for LongTermForecastClient API calls."""
 
