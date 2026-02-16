@@ -384,6 +384,10 @@ class TestShortTermForecastInputValidation:
         with pytest.raises(ValueError, match="skip must be non-negative"):
             self.client.read_short_term_forecasts(skip=-1)
 
+    def test_invalid_model_raises(self):
+        with pytest.raises(ValueError, match="Invalid model 'INVALID'"):
+            self.client.read_short_term_forecasts(model="INVALID")
+
     def test_zero_limit_raises(self):
         with pytest.raises(ValueError, match="limit must be positive"):
             self.client.read_short_term_forecasts(limit=0)

@@ -10,6 +10,7 @@ import pandas as pd
 
 from sapphire_api_client.postprocessing_base import SapphirePostprocessingBase
 from sapphire_api_client.validators import (
+    VALID_FORECAST_MODELS,
     VALID_HORIZONS,
     validate_enum_param,
     validate_non_negative_int,
@@ -68,6 +69,7 @@ class SapphireShortTermForecastClient(SapphirePostprocessingBase):
             DataFrame with forecast data
         """
         validate_enum_param(horizon, VALID_HORIZONS, "horizon")
+        validate_enum_param(model, VALID_FORECAST_MODELS, "model")
         validate_non_negative_int(skip, "skip")
         validate_positive_int(limit, "limit")
 
