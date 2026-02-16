@@ -41,9 +41,12 @@ This is a Python client library for the SAPPHIRE Forecast Tools API, used for hy
 ### Client Hierarchy
 
 ```
-SapphireAPIClient (base)           # src/sapphire_api_client/client.py - retry logic, batching, HTTP methods
-├── SapphirePreprocessingClient    # src/sapphire_api_client/preprocessing.py - runoff, hydrograph, meteo, snow
-└── SapphirePostprocessingClient   # src/sapphire_api_client/postprocessing.py - forecasts, LR forecasts, skill metrics
+SapphireAPIClient (base)                    # src/sapphire_api_client/client.py - retry logic, batching, HTTP methods
+├── SapphirePreprocessingClient             # src/sapphire_api_client/preprocessing.py - runoff, hydrograph, meteo, snow
+└── SapphirePostprocessingBase              # src/sapphire_api_client/postprocessing_base.py - SERVICE_PREFIX + skill metrics
+    ├── SapphireShortTermForecastClient     # src/sapphire_api_client/short_term.py - short-term forecasts + LR forecasts
+    ├── SapphireLongTermForecastClient      # src/sapphire_api_client/long_term.py - long-term forecasts
+    └── SapphirePostprocessingClient        # src/sapphire_api_client/postprocessing.py - facade (inherits ShortTerm + LongTerm, deprecated aliases)
 ```
 
 The base client handles:
@@ -62,7 +65,7 @@ Each data type follows this pattern:
 
 - Source code is in `src/sapphire_api_client/` (src layout)
 - Tests use `responses` library to mock HTTP requests
-- Exports: `SapphireAPIClient`, `SapphireAPIError`, `SapphirePreprocessingClient`, `SapphirePostprocessingClient`
+- Exports: `SapphireAPIClient`, `SapphireAPIError`, `SapphirePreprocessingClient`, `SapphirePostprocessingClient`, `SapphireShortTermForecastClient`, `SapphireLongTermForecastClient`
 
 ### Data Types
 
