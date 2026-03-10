@@ -481,6 +481,11 @@ class TestPreprocessingInputValidation:
         with pytest.raises(ValueError, match="Invalid snow_type 'RAIN'"):
             self.client.read_snow(snow_type="RAIN")
 
+    def test_quarter_horizon_rejected_by_runoff(self):
+        """'quarter' is not a valid preprocessing horizon."""
+        with pytest.raises(ValueError, match="Invalid horizon 'quarter'"):
+            self.client.read_runoff(horizon="quarter")
+
     def test_negative_skip_raises(self):
         with pytest.raises(ValueError, match="skip must be non-negative"):
             self.client.read_runoff(skip=-1)

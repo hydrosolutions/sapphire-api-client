@@ -14,7 +14,7 @@ import pandas as pd
 
 from sapphire_api_client.client import SapphireAPIClient
 from sapphire_api_client.validators import (
-    VALID_HORIZONS,
+    VALID_SKILL_METRIC_HORIZONS,
     validate_enum_param,
     validate_non_negative_int,
     validate_positive_int,
@@ -61,7 +61,7 @@ class SapphirePostprocessingBase(SapphireAPIClient):
         Returns:
             DataFrame with skill metrics
         """
-        validate_enum_param(horizon, VALID_HORIZONS, "horizon")
+        validate_enum_param(horizon, VALID_SKILL_METRIC_HORIZONS, "horizon")
         validate_non_negative_int(skip, "skip")
         validate_positive_int(limit, "limit")
 
@@ -96,7 +96,7 @@ class SapphirePostprocessingBase(SapphireAPIClient):
     @staticmethod
     def prepare_skill_metric_records(
         df: pd.DataFrame,
-        horizon_type: Literal["day", "pentad", "decade", "month", "season", "year"],
+        horizon_type: Literal["day", "pentad", "decade", "month", "quarter", "season", "year"],
         code: str,
         model: str,
     ) -> List[Dict[str, Any]]:

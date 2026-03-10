@@ -305,6 +305,36 @@ class TestSkillMetricsOnFacade:
         assert records[0]["rmse"] is None
         assert records[0]["nse"] is None
 
+    def test_prepare_skill_metric_records_quarter_horizon(self):
+        """'quarter' horizon produces correct records."""
+        df = pd.DataFrame({"mae": [7.5], "nse": [0.72]})
+        records = SapphirePostprocessingClient.prepare_skill_metric_records(
+            df=df,
+            horizon_type="quarter",
+            code="15013",
+            model="GBT",
+        )
+        assert len(records) == 1
+        assert records[0]["horizon_type"] == "quarter"
+        assert records[0]["code"] == "15013"
+        assert records[0]["model"] == "GBT"
+        assert records[0]["mae"] == 7.5
+        assert records[0]["nse"] == 0.72
+
+    @responses.activate
+    def test_read_skill_metrics_quarter_horizon(self):
+        """Read skill metrics accepts 'quarter' horizon."""
+        responses.add(
+            responses.GET,
+            "http://localhost:8000/api/postprocessing/skill-metric/",
+            json=[{"id": 1, "horizon_type": "quarter", "code": "15013", "nse": 0.68}],
+            status=200,
+        )
+        df = self.client.read_skill_metrics(horizon="quarter", code="15013")
+        assert len(df) == 1
+        assert df.iloc[0]["horizon_type"] == "quarter"
+        assert df.iloc[0]["nse"] == 0.68
+
     def test_missing_metric_columns_warns(self):
         """Test warning when no metric columns found."""
         df = pd.DataFrame({"unrelated_col": [1.0]})
