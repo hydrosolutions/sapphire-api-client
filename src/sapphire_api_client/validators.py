@@ -14,6 +14,7 @@ VALID_METEO_TYPES: Set[str] = {"T", "P"}
 VALID_SNOW_TYPES: Set[str] = {"HS", "ROF", "SWE"}
 VALID_FORECAST_MODELS: Set[str] = {"TFT", "TiDE", "TSMixer", "LR", "EM", "NE"}
 VALID_LONG_FORECAST_HORIZONS: Set[str] = {"month", "quarter", "season"}
+VALID_SKILL_METRIC_HORIZONS: Set[str] = VALID_HORIZONS | VALID_LONG_FORECAST_HORIZONS
 VALID_LONG_FORECAST_MODELS: Set[str] = {
     "TSMixer", "TiDE", "TFT", "EM", "NE", "RRAM", "LR", "GBT",
     "LR_Base", "LR_SM", "LR_SM_DT", "LR_SM_ROF",

@@ -13,6 +13,7 @@ from sapphire_api_client.validators import (
     VALID_FORECAST_MODELS,
     VALID_HORIZONS,
     VALID_METEO_TYPES,
+    VALID_SKILL_METRIC_HORIZONS,
     VALID_SNOW_TYPES,
 )
 
@@ -28,5 +29,6 @@ __all__ = [
     "VALID_FORECAST_MODELS",
     "VALID_HORIZONS",
     "VALID_METEO_TYPES",
+    "VALID_SKILL_METRIC_HORIZONS",
     "VALID_SNOW_TYPES",
 ]

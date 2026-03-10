@@ -9,7 +9,9 @@ import pandas as pd
 
 from sapphire_api_client.validators import (
     VALID_HORIZONS,
+    VALID_LONG_FORECAST_HORIZONS,
     VALID_METEO_TYPES,
+    VALID_SKILL_METRIC_HORIZONS,
     VALID_SNOW_TYPES,
     VALID_FORECAST_MODELS,
     validate_base_url,
@@ -36,6 +38,14 @@ class TestConstants:
 
     def test_valid_snow_types(self):
         assert VALID_SNOW_TYPES == {"HS", "ROF", "SWE"}
+
+    def test_valid_skill_metric_horizons(self):
+        assert VALID_SKILL_METRIC_HORIZONS == {
+            "day", "pentad", "decade", "month", "quarter", "season", "year"
+        }
+
+    def test_skill_metric_horizons_is_union_of_horizon_sets(self):
+        assert VALID_SKILL_METRIC_HORIZONS == VALID_HORIZONS | VALID_LONG_FORECAST_HORIZONS
 
     def test_valid_forecast_models(self):
         assert VALID_FORECAST_MODELS == {"TFT", "TiDE", "TSMixer", "LR", "EM", "NE"}
