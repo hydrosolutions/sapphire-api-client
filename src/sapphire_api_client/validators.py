@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 import pandas as pd
 
 # Valid enum values for API parameters
-VALID_HORIZONS: Set[str] = {"day", "pentad", "decade", "month", "season", "year"}
+VALID_HORIZONS: Set[str] = {"day", "pentad", "decade", "month", "quarter", "season", "year"}
 VALID_METEO_TYPES: Set[str] = {"T", "P"}
 VALID_SNOW_TYPES: Set[str] = {"HS", "ROF", "SWE"}
 VALID_FORECAST_MODELS: Set[str] = {"TFT", "TiDE", "TSMixer", "LR", "EM", "NE"}
