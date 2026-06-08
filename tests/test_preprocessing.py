@@ -417,6 +417,49 @@ class TestPreprocessingClientAPI:
         assert len(df) == 1
 
     @responses.activate
+    def test_read_hydrograph_quarter_horizon(self):
+        """read_hydrograph passes client-side validation for the quarter horizon."""
+        responses.add(
+            responses.GET,
+            "http://localhost:8000/api/preprocessing/hydrograph/",
+            json=[{"id": 1, "horizon_type": "quarter", "norm": 105.0}],
+            status=200,
+        )
+
+        df = self.client.read_hydrograph(horizon="quarter", code="12345")
+
+        assert len(df) == 1
+        assert df.iloc[0]["norm"] == 105.0
+        assert "horizon=quarter" in responses.calls[0].request.url
+
+    @responses.activate
+    def test_write_hydrograph_quarter_records(self):
+        """write_hydrograph accepts a minimal quarter record without client-side error."""
+        responses.add(
+            responses.POST,
+            "http://localhost:8000/api/preprocessing/hydrograph/",
+            json=[{"id": 1}],
+            status=201,
+        )
+
+        records = [
+            {
+                "horizon_type": "quarter",
+                "code": "12345",
+                "date": "2024-01-01",
+                "day_of_year": 1,
+                "horizon_value": 1,
+                "horizon_in_year": 4,
+                "norm": 105.0,
+                "previous": 100.0,
+                "current": 110.0,
+            }
+        ]
+        count = self.client.write_hydrograph(records)
+
+        assert count == 1
+
+    @responses.activate
     def test_read_meteo(self):
         """Test reading meteo data."""
         responses.add(
@@ -481,10 +524,18 @@ class TestPreprocessingInputValidation:
         with pytest.raises(ValueError, match="Invalid snow_type 'RAIN'"):
             self.client.read_snow(snow_type="RAIN")
 
-    def test_quarter_horizon_rejected_by_runoff(self):
-        """'quarter' is not a valid preprocessing horizon."""
-        with pytest.raises(ValueError, match="Invalid horizon 'quarter'"):
-            self.client.read_runoff(horizon="quarter")
+    @responses.activate
+    def test_quarter_horizon_accepted_by_runoff(self):
+        """'quarter' is now a valid preprocessing horizon (shared VALID_HORIZONS)."""
+        responses.add(
+            responses.GET,
+            "http://localhost:8000/api/preprocessing/runoff/",
+            json=[],
+            status=200,
+        )
+        df = self.client.read_runoff(horizon="quarter")
+        assert isinstance(df, pd.DataFrame)
+        assert "horizon=quarter" in responses.calls[0].request.url
 
     def test_negative_skip_raises(self):
         with pytest.raises(ValueError, match="skip must be non-negative"):

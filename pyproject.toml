@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sapphire-api-client"
-version = "0.1.0"
+version = "0.4.0"
 description = "Python client for SAPPHIRE Forecast Tools API"
 readme = "README.md"
 license = {file = "LICENSE"}

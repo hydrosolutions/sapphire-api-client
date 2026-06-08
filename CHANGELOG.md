@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.4.0] - 2026-06-08
+
+### Added
+- Allow `quarter` horizon on preprocessing hydrograph read/write (`read_hydrograph`, `write_hydrograph`). `quarter` is now part of the shared `VALID_HORIZONS` allowlist, so preprocessing runoff/hydrograph reads also accept it.
+
 ## [0.3.0] - 2026-02-16
 
 ### Added

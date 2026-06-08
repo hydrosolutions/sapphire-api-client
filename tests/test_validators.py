@@ -31,7 +31,9 @@ class TestConstants:
     """Tests for exported constant sets."""
 
     def test_valid_horizons(self):
-        assert VALID_HORIZONS == {"day", "pentad", "decade", "month", "season", "year"}
+        assert VALID_HORIZONS == {
+            "day", "pentad", "decade", "month", "quarter", "season", "year"
+        }
 
     def test_valid_meteo_types(self):
         assert VALID_METEO_TYPES == {"T", "P"}
@@ -159,6 +161,22 @@ class TestValidateEnumParam:
 
     def test_valid_value(self):
         validate_enum_param("day", VALID_HORIZONS, "horizon")  # should not raise
+
+    def test_quarter_is_valid_horizon(self):
+        validate_enum_param("quarter", VALID_HORIZONS, "horizon")  # should not raise
+
+    def test_all_six_legacy_horizons_still_valid(self):
+        """The six pre-existing horizons must keep validating after adding quarter."""
+        for horizon in ("day", "pentad", "decade", "month", "season", "year"):
+            validate_enum_param(horizon, VALID_HORIZONS, "horizon")  # should not raise
+
+    def test_allowlist_widened_by_exactly_one_value(self):
+        """quarter is the only addition; an unknown value still raises."""
+        assert VALID_HORIZONS == {
+            "day", "pentad", "decade", "month", "quarter", "season", "year"
+        }
+        with pytest.raises(ValueError, match="Invalid horizon 'fortnight'"):
+            validate_enum_param("fortnight", VALID_HORIZONS, "horizon")
 
     def test_invalid_value(self):
         with pytest.raises(ValueError, match="Invalid horizon 'weekly'"):
