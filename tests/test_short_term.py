@@ -55,6 +55,27 @@ class TestPrepareShortTermForecastRecords:
         assert records[0]["lower"] is None
         assert records[0]["upper"] == 100.0
 
+    @pytest.mark.parametrize(
+        "horizon_type",
+        ["day", "pentad", "decade", "month", "quarter", "season", "year"],
+    )
+    def test_all_server_horizons_accepted(self, horizon_type):
+        """Every server HorizonType value (incl. quarter) flows through."""
+        df = pd.DataFrame({
+            "date": [date(2024, 1, 1)],
+            "forecast": [100.5],
+            "lower": [80.0],
+            "upper": [120.0],
+        })
+
+        records = SapphireShortTermForecastClient.prepare_short_term_forecast_records(
+            df=df,
+            horizon_type=horizon_type,
+            code="12345",
+        )
+
+        assert records[0]["horizon_type"] == horizon_type
+
     def test_custom_column_names(self):
         """Test with custom column names."""
         df = pd.DataFrame({

@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.0] - 2026-06-12
+
+### Changed
+- Align all `horizon_type` `Literal` type hints with the server's `HorizonType` enum (`day, pentad, decade, month, quarter, season, year`). Previously several `prepare_*_records` signatures (`prepare_runoff_records`, `prepare_hydrograph_records`, `prepare_short_term_forecast_records`, and the `SapphirePostprocessingClient` facade) omitted `quarter`, causing a spurious client-side type/validation error for a value the server accepts (SAPPHIRE INFRA-019).
+- Introduce a single shared `HorizonTypeLiteral` alias in `validators.py` as the one place the horizon value set is declared; the runtime `VALID_HORIZONS` set is now derived from it via `typing.get_args`, so the type hint and the validation allowlist cannot drift apart. `HorizonTypeLiteral` is now exported from the package.
+
+This change only widens what the type hints accept; runtime behavior for existing values is unchanged. The narrower `VALID_LONG_FORECAST_HORIZONS` set (`month, quarter, season`) is a deliberately separate concept and is left untouched.
+
 ## [0.4.0] - 2026-06-08
 
 ### Added

@@ -12,7 +12,7 @@ renamed methods.
 """
 
 import warnings
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from datetime import date
 
@@ -20,6 +20,7 @@ import pandas as pd
 
 from sapphire_api_client.long_term import SapphireLongTermForecastClient
 from sapphire_api_client.short_term import SapphireShortTermForecastClient
+from sapphire_api_client.validators import HorizonTypeLiteral
 
 
 class SapphirePostprocessingClient(
@@ -91,7 +92,7 @@ class SapphirePostprocessingClient(
     @staticmethod
     def prepare_forecast_records(
         df: pd.DataFrame,
-        horizon_type: Literal["day", "pentad", "decade", "month", "season", "year"],
+        horizon_type: HorizonTypeLiteral,
         code: str,
         date_col: str = "date",
         forecast_col: str = "forecast",

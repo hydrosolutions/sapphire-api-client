@@ -4,12 +4,13 @@ Client for SAPPHIRE short-term forecasts and linear regression forecasts.
 
 import logging
 from datetime import date
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
 
 from sapphire_api_client.postprocessing_base import SapphirePostprocessingBase
 from sapphire_api_client.validators import (
+    HorizonTypeLiteral,
     VALID_FORECAST_MODELS,
     VALID_HORIZONS,
     validate_enum_param,
@@ -110,7 +111,7 @@ class SapphireShortTermForecastClient(SapphirePostprocessingBase):
     @staticmethod
     def prepare_short_term_forecast_records(
         df: pd.DataFrame,
-        horizon_type: Literal["day", "pentad", "decade", "month", "season", "year"],
+        horizon_type: HorizonTypeLiteral,
         code: str,
         date_col: str = "date",
         forecast_col: str = "forecast",

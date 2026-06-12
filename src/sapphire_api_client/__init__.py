@@ -10,6 +10,7 @@ from sapphire_api_client.postprocessing import SapphirePostprocessingClient
 from sapphire_api_client.preprocessing import SapphirePreprocessingClient
 from sapphire_api_client.short_term import SapphireShortTermForecastClient
 from sapphire_api_client.validators import (
+    HorizonTypeLiteral,
     VALID_FORECAST_MODELS,
     VALID_HORIZONS,
     VALID_METEO_TYPES,
@@ -17,9 +18,10 @@ from sapphire_api_client.validators import (
     VALID_SNOW_TYPES,
 )
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 __all__ = [
+    "HorizonTypeLiteral",
     "SapphireAPIClient",
     "SapphireAPIError",
     "SapphireLongTermForecastClient",

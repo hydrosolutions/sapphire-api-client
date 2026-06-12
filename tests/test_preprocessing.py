@@ -57,6 +57,28 @@ class TestPrepareRunoffRecords:
         assert records[0]["discharge"] is None
         assert records[0]["predictor"] is None
 
+    @pytest.mark.parametrize(
+        "horizon_type",
+        ["day", "pentad", "decade", "month", "quarter", "season", "year"],
+    )
+    def test_all_server_horizons_accepted(self, horizon_type):
+        """Every server HorizonType value (incl. quarter) flows through."""
+        df = pd.DataFrame({
+            "date": [date(2024, 1, 1)],
+            "discharge": [100.5],
+            "predictor": [50.0],
+            "horizon_value": [1],
+            "horizon_in_year": [1],
+        })
+
+        records = SapphirePreprocessingClient.prepare_runoff_records(
+            df=df,
+            horizon_type=horizon_type,
+            code="12345",
+        )
+
+        assert records[0]["horizon_type"] == horizon_type
+
     def test_custom_column_names(self):
         """Test with custom column names."""
         df = pd.DataFrame({
@@ -131,6 +153,28 @@ class TestPrepareHydrographRecords:
         assert records[0]["mean"] == 100.0
         # Missing columns should not be in record
         assert "std" not in records[0]
+
+    @pytest.mark.parametrize(
+        "horizon_type",
+        ["day", "pentad", "decade", "month", "quarter", "season", "year"],
+    )
+    def test_all_server_horizons_accepted(self, horizon_type):
+        """Every server HorizonType value (incl. quarter) flows through."""
+        df = pd.DataFrame({
+            "date": [date(2024, 1, 1)],
+            "day_of_year": [1],
+            "horizon_value": [1],
+            "horizon_in_year": [1],
+            "mean": [100.0],
+        })
+
+        records = SapphirePreprocessingClient.prepare_hydrograph_records(
+            df=df,
+            horizon_type=horizon_type,
+            code="12345",
+        )
+
+        assert records[0]["horizon_type"] == horizon_type
 
 
 class TestPrepareMeteoRecords:

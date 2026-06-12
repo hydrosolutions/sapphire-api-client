@@ -3,13 +3,20 @@ Input validation functions and constants for the SAPPHIRE API client.
 """
 
 import warnings
-from typing import Any, Optional, Set
+from typing import Any, Literal, Optional, Set, get_args
 from urllib.parse import urlparse
 
 import pandas as pd
 
+# Single source of truth for the server's HorizonType enum. The Literal alias
+# is used for static type hints on ``horizon_type`` parameters, and the runtime
+# validation set ``VALID_HORIZONS`` is derived from it so the two cannot drift.
+HorizonTypeLiteral = Literal[
+    "day", "pentad", "decade", "month", "quarter", "season", "year"
+]
+
 # Valid enum values for API parameters
-VALID_HORIZONS: Set[str] = {"day", "pentad", "decade", "month", "quarter", "season", "year"}
+VALID_HORIZONS: Set[str] = set(get_args(HorizonTypeLiteral))
 VALID_METEO_TYPES: Set[str] = {"T", "P"}
 VALID_SNOW_TYPES: Set[str] = {"HS", "ROF", "SWE"}
 VALID_FORECAST_MODELS: Set[str] = {"TFT", "TiDE", "TSMixer", "LR", "EM", "NE"}
