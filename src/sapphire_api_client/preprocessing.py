@@ -12,6 +12,7 @@ import pandas as pd
 
 from sapphire_api_client.client import SapphireAPIClient
 from sapphire_api_client.validators import (
+    HorizonTypeLiteral,
     VALID_HORIZONS,
     VALID_METEO_TYPES,
     VALID_SNOW_TYPES,
@@ -59,7 +60,7 @@ class SapphirePreprocessingClient(SapphireAPIClient):
         Read runoff data from the API.
 
         Args:
-            horizon: Horizon type filter (day, pentad, decade, month, season, year)
+            horizon: Horizon type filter (day, pentad, decade, month, quarter, season, year)
             code: Station code filter
             start_date: Start date filter (inclusive)
             end_date: End date filter (inclusive)
@@ -105,7 +106,7 @@ class SapphirePreprocessingClient(SapphireAPIClient):
     @staticmethod
     def prepare_runoff_records(
         df: pd.DataFrame,
-        horizon_type: Literal["day", "pentad", "decade", "month", "season", "year"],
+        horizon_type: HorizonTypeLiteral,
         code: str,
         date_col: str = "date",
         discharge_col: str = "discharge",
@@ -118,7 +119,7 @@ class SapphirePreprocessingClient(SapphireAPIClient):
 
         Args:
             df: Source DataFrame
-            horizon_type: Horizon type (day, pentad, decade, month, season, year)
+            horizon_type: Horizon type (day, pentad, decade, month, quarter, season, year)
             code: Station code
             date_col: Name of date column
             discharge_col: Name of discharge column
@@ -210,7 +211,7 @@ class SapphirePreprocessingClient(SapphireAPIClient):
     @staticmethod
     def prepare_hydrograph_records(
         df: pd.DataFrame,
-        horizon_type: Literal["day", "pentad", "decade", "month", "season", "year"],
+        horizon_type: HorizonTypeLiteral,
         code: str,
         date_col: str = "date",
         day_of_year_col: str = "day_of_year",

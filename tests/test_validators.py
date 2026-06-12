@@ -3,11 +3,13 @@ Tests for the validators module.
 """
 
 import warnings
+from typing import get_args
 
 import pytest
 import pandas as pd
 
 from sapphire_api_client.validators import (
+    HorizonTypeLiteral,
     VALID_HORIZONS,
     VALID_LONG_FORECAST_HORIZONS,
     VALID_METEO_TYPES,
@@ -34,6 +36,16 @@ class TestConstants:
         assert VALID_HORIZONS == {
             "day", "pentad", "decade", "month", "quarter", "season", "year"
         }
+
+    def test_horizon_type_literal_matches_server_enum(self):
+        """The shared Literal must equal the full server HorizonType enum."""
+        assert get_args(HorizonTypeLiteral) == (
+            "day", "pentad", "decade", "month", "quarter", "season", "year"
+        )
+
+    def test_valid_horizons_derived_from_literal(self):
+        """VALID_HORIZONS is the single-source-of-truth Literal, as a set."""
+        assert VALID_HORIZONS == set(get_args(HorizonTypeLiteral))
 
     def test_valid_meteo_types(self):
         assert VALID_METEO_TYPES == {"T", "P"}

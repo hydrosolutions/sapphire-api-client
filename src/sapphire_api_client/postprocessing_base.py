@@ -8,12 +8,13 @@ postprocessing forecast families.
 import logging
 import warnings
 from datetime import date
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
 
 from sapphire_api_client.client import SapphireAPIClient
 from sapphire_api_client.validators import (
+    HorizonTypeLiteral,
     VALID_SKILL_METRIC_HORIZONS,
     validate_enum_param,
     validate_non_negative_int,
@@ -96,7 +97,7 @@ class SapphirePostprocessingBase(SapphireAPIClient):
     @staticmethod
     def prepare_skill_metric_records(
         df: pd.DataFrame,
-        horizon_type: Literal["day", "pentad", "decade", "month", "quarter", "season", "year"],
+        horizon_type: HorizonTypeLiteral,
         code: str,
         model: str,
     ) -> List[Dict[str, Any]]:
